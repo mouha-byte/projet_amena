@@ -16,6 +16,10 @@ export class FeedbackService {
     return this.http.get<Feedback[]>(this.baseUrl);
   }
 
+  getById(id: number): Observable<Feedback> {
+    return this.http.get<Feedback>(`${this.baseUrl}/${id}`);
+  }
+
   create(payload: Feedback): Observable<Feedback> {
     return this.http.post<Feedback>(this.baseUrl, payload);
   }

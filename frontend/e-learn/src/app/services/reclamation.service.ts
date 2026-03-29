@@ -16,6 +16,10 @@ export class ReclamationService {
     return this.http.get<Reclamation[]>(this.baseUrl);
   }
 
+  getById(id: number): Observable<Reclamation> {
+    return this.http.get<Reclamation>(`${this.baseUrl}/${id}`);
+  }
+
   create(payload: Reclamation): Observable<Reclamation> {
     return this.http.post<Reclamation>(this.baseUrl, payload);
   }

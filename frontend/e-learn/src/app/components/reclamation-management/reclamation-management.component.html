@@ -1,69 +1,157 @@
-<section class="panel">
-  <h2>Gestion Reclamation</h2>
-
-  <form class="form-grid" (ngSubmit)="saveReclamation()">
-    <label>
-      Nom
-      <input type="text" [(ngModel)]="formModel.userName" name="reclamationUserName" />
-    </label>
-
-    <label>
-      Email
-      <input type="email" [(ngModel)]="formModel.userEmail" name="reclamationUserEmail" />
-    </label>
-
-    <label>
-      Sujet
-      <input type="text" [(ngModel)]="formModel.subject" name="reclamationSubject" />
-    </label>
-
-    <label>
-      Statut
-      <select [(ngModel)]="formModel.status" name="reclamationStatus">
-        <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
-      </select>
-    </label>
-
-    <label class="full">
-      Description
-      <textarea rows="3" [(ngModel)]="formModel.description" name="reclamationDescription"></textarea>
-    </label>
-
-    <div class="actions full">
-      <button type="submit">{{ editingId === null ? 'Ajouter' : 'Modifier' }}</button>
-      <button type="button" class="secondary" (click)="resetForm()">Nouveau</button>
+<section class="management-page reclamation-page">
+  <header class="hero-card">
+    <div class="hero-copy">
+      <p class="hero-kicker">Support Center</p>
+      <h2>Gestion Reclamation</h2>
+      <p>Centralisez le suivi des plaintes, les partages et l'export PDF depuis un seul espace.</p>
     </div>
-  </form>
+    <div class="hero-metrics">
+      <article class="metric">
+        <span>Total</span>
+        <strong>{{ reclamations.length }}</strong>
+      </article>
+      <article class="metric">
+        <span>Mode</span>
+        <strong>{{ editingId === null ? 'Ajout' : 'Edition' }}</strong>
+      </article>
+      <article class="metric">
+        <span>Lecture vocale</span>
+        <strong [class.live]="speaking">{{ speaking ? 'Active' : 'Inactive' }}</strong>
+      </article>
+    </div>
+  </header>
 
-  <p class="success" *ngIf="successMessage">{{ successMessage }}</p>
-  <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
-  <p *ngIf="loading">Chargement...</p>
+  <div class="top-grid">
+    <article class="panel-card form-card">
+      <div class="panel-title">
+        <h3>Nouvelle Reclamation</h3>
+        <p>Renseignez les champs pour ajouter ou mettre a jour une reclamation.</p>
+      </div>
 
-  <table *ngIf="!loading">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Nom</th>
-        <th>Email</th>
-        <th>Sujet</th>
-        <th>Statut</th>
-        <th>Description</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let item of reclamations">
-        <td>{{ item.id }}</td>
-        <td>{{ item.userName }}</td>
-        <td>{{ item.userEmail }}</td>
-        <td>{{ item.subject }}</td>
-        <td>{{ item.status }}</td>
-        <td>{{ item.description }}</td>
-        <td>
-          <button type="button" class="secondary" (click)="startEdit(item)">Editer</button>
-          <button type="button" class="danger" (click)="deleteReclamation(item.id)">Supprimer</button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+      <form class="form-grid" (ngSubmit)="saveReclamation()">
+        <label>
+          Nom
+          <input type="text" [(ngModel)]="formModel.userName" name="reclamationUserName" />
+        </label>
+
+        <label>
+          Email
+          <input type="email" [(ngModel)]="formModel.userEmail" name="reclamationUserEmail" />
+        </label>
+
+        <label>
+          Sujet
+          <input type="text" [(ngModel)]="formModel.subject" name="reclamationSubject" />
+        </label>
+
+        <label>
+          URL image
+          <input type="url" [(ngModel)]="formModel.imageUrl" name="reclamationImageUrl" placeholder="https://..." />
+        </label>
+
+        <label>
+          Statut
+          <select [(ngModel)]="formModel.status" name="reclamationStatus">
+            <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+          </select>
+        </label>
+
+        <label class="full">
+          Description
+          <textarea rows="3" [(ngModel)]="formModel.description" name="reclamationDescription"></textarea>
+        </label>
+
+        <div class="actions full action-row">
+          <button type="submit">{{ editingId === null ? 'Ajouter' : 'Modifier' }}</button>
+          <button type="button" class="secondary" (click)="resetForm()">Nouveau</button>
+          <button type="button" class="secondary" (click)="stopSpeech()" [disabled]="!speaking">Arreter lecture</button>
+        </div>
+      </form>
+    </article>
+
+    <aside class="panel-card utility-card">
+      <div class="panel-title compact">
+        <h3>Actions rapides</h3>
+        <p>Partage social, lecture vocale et export PDF disponibles sur chaque ligne.</p>
+      </div>
+
+      <div class="hint-block">
+        <h4>Workflow recommande</h4>
+        <ul>
+          <li>Creer une reclamation avec statut OPEN.</li>
+          <li>Passer a IN_PROGRESS durant le traitement.</li>
+          <li>Finaliser en RESOLVED ou REJECTED.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <div class="flash-messages">
+    <p class="status-line success" *ngIf="successMessage">{{ successMessage }}</p>
+    <p class="status-line error" *ngIf="errorMessage">{{ errorMessage }}</p>
+    <p class="status-line info" *ngIf="speaking">Lecture vocale en cours...</p>
+    <p class="status-line info" *ngIf="loading">Chargement...</p>
+  </div>
+
+  <article class="panel-card table-card">
+    <div class="panel-title table-head">
+      <h3>Liste des Reclamations</h3>
+      <span class="pill">{{ reclamations.length }} element(s)</span>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && reclamations.length === 0">
+      Aucune reclamation disponible pour le moment.
+    </div>
+
+    <div class="table-wrapper" *ngIf="!loading && reclamations.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Sujet</th>
+            <th>Statut</th>
+            <th>Image</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of reclamations">
+            <td>#{{ item.id }}</td>
+            <td>{{ item.userName }}</td>
+            <td>{{ item.userEmail }}</td>
+            <td>{{ item.subject }}</td>
+            <td>
+              <span
+                class="status-chip"
+                [ngClass]="{
+                  open: item.status === 'OPEN',
+                  'in-progress': item.status === 'IN_PROGRESS',
+                  resolved: item.status === 'RESOLVED',
+                  rejected: item.status === 'REJECTED'
+                }"
+              >
+                {{ item.status }}
+              </span>
+            </td>
+            <td>
+              <img *ngIf="item.imageUrl" [src]="item.imageUrl" alt="image reclamation" class="thumb" />
+              <span class="image-placeholder" *ngIf="!item.imageUrl">Sans image</span>
+            </td>
+            <td class="description-cell">{{ item.description }}</td>
+            <td class="actions-cell">
+              <button type="button" class="secondary" (click)="startEdit(item)">Editer</button>
+              <button type="button" class="danger" (click)="deleteReclamation(item.id)">Supprimer</button>
+              <button type="button" class="secondary" (click)="speakReclamation(item)">Lire</button>
+              <button type="button" class="secondary" (click)="shareOnWhatsapp(item)">WhatsApp</button>
+              <button type="button" class="secondary" (click)="shareOnTelegram(item)">Telegram</button>
+              <button type="button" class="secondary" (click)="exportPdf(item)">PDF</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
 </section>

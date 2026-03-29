@@ -32,6 +32,8 @@ public class FeedbackService {
         Feedback feedback = findById(id);
         feedback.setUserName(request.getUserName());
         feedback.setUserEmail(request.getUserEmail());
+        feedback.setTitle(request.getTitle());
+        feedback.setImageUrl(request.getImageUrl());
         feedback.setRating(request.getRating());
         feedback.setComment(request.getComment());
         return feedbackRepository.save(feedback);

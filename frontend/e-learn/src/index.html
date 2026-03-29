@@ -810,6 +810,16 @@
 							<span class="nav-text">Event Management</span>
 						</a>
                     </li>
+					<li><a class="ai-icon" href="/feedbacks" aria-expanded="false">
+							<i class="la la-comments"></i>
+							<span class="nav-text">Forum</span>
+						</a>
+                    </li>
+					<li><a class="ai-icon" href="/reclamations" aria-expanded="false">
+							<i class="la la-exclamation-circle"></i>
+							<span class="nav-text">Reclamation</span>
+						</a>
+                    </li>
 					<li><a class="has-arrow" href="javascript:void(0);" aria-expanded="false">
 							<i class="la la-user"></i>
 							<span class="nav-text">Professors</span>
@@ -1061,7 +1071,9 @@
             <!-- row -->
             <div class="container-fluid">
 
-                <div class="row">
+				<app-root></app-root>
+
+				<div class="row d-none">
 					<div class="col-xl-3 col-xxl-3 col-sm-6">
 						<div class="widget-stat card bg-primary">
 							<div class="card-body">
@@ -1485,8 +1497,6 @@
         Main wrapper end
     ***********************************-->
 
-    <app-root></app-root>
-
     <!--**********************************
         Scripts
     ***********************************-->
@@ -1516,7 +1526,6 @@
 	<script src="./js/custom.min.js"></script>
     <script src="./js/dlabnav-init.js"></script>
     <script src="./js/demo.js"></script>
-    <script src="./js/styleSwitcher.js"></script>
 
 </body>
 </html>

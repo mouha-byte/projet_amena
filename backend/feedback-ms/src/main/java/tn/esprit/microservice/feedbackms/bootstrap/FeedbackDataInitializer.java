@@ -19,12 +19,16 @@ public class FeedbackDataInitializer {
             Feedback f1 = new Feedback();
             f1.setUserName("Amena");
             f1.setUserEmail("amena@example.com");
+            f1.setTitle("Excellent cours Java");
+            f1.setImageUrl("https://picsum.photos/seed/feedback-1/600/300");
             f1.setRating(5);
             f1.setComment("Excellent contenu de formation.");
 
             Feedback f2 = new Feedback();
             f2.setUserName("Karim");
             f2.setUserEmail("karim@example.com");
+            f2.setTitle("Bonne experience utilisateur");
+            f2.setImageUrl("https://picsum.photos/seed/feedback-2/600/300");
             f2.setRating(4);
             f2.setComment("Bonne plateforme, interface claire.");
 

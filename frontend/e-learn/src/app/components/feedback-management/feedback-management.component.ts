@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FeedbackService } from '../../services/feedback.service';
 import { Feedback } from '../../models/feedback.model';
+
+type SpeechTargetField = 'title' | 'comment';
 
 @Component({
   selector: 'app-feedback-management',
@@ -14,15 +16,25 @@ export class FeedbackManagementComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
   editingId: number | null = null;
+  listening = false;
+  speechSupported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  qrPayload = '';
+
+  private speechRecognition: SpeechRecognition | null = null;
 
   formModel: Feedback = {
     userName: '',
     userEmail: '',
+    title: '',
+    imageUrl: '',
     rating: 5,
     comment: ''
   };
 
-  constructor(private readonly feedbackService: FeedbackService) {}
+  constructor(
+    private readonly feedbackService: FeedbackService,
+    private readonly cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.loadFeedbacks();
@@ -34,11 +46,14 @@ export class FeedbackManagementComponent implements OnInit {
     this.feedbackService.getAll().subscribe({
       next: (data) => {
         this.feedbacks = data;
+        this.refreshQrPayload();
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.errorMessage = 'Impossible de charger les feedbacks.';
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -50,11 +65,13 @@ export class FeedbackManagementComponent implements OnInit {
     const payload: Feedback = {
       userName: this.formModel.userName.trim(),
       userEmail: this.formModel.userEmail.trim(),
+      title: this.formModel.title.trim(),
+      imageUrl: this.formModel.imageUrl?.trim(),
       rating: this.formModel.rating,
       comment: this.formModel.comment.trim()
     };
 
-    if (!payload.userName || !payload.userEmail || !payload.comment) {
+    if (!payload.userName || !payload.userEmail || !payload.title || !payload.comment) {
       this.errorMessage = 'Veuillez remplir tous les champs du feedback.';
       return;
     }
@@ -99,6 +116,8 @@ export class FeedbackManagementComponent implements OnInit {
     this.formModel = {
       userName: item.userName,
       userEmail: item.userEmail,
+      title: item.title,
+      imageUrl: item.imageUrl,
       rating: item.rating,
       comment: item.comment
     };
@@ -128,8 +147,102 @@ export class FeedbackManagementComponent implements OnInit {
     this.formModel = {
       userName: '',
       userEmail: '',
+      title: '',
+      imageUrl: '',
       rating: 5,
       comment: ''
     };
+  }
+
+  startSpeechInput(target: SpeechTargetField): void {
+    if (!this.speechSupported) {
+      this.errorMessage = 'Speech-to-text non supporte sur ce navigateur.';
+      return;
+    }
+
+    const SpeechRecognitionCtor = (window as Window & {
+      SpeechRecognition?: new () => SpeechRecognition;
+      webkitSpeechRecognition?: new () => SpeechRecognition;
+    }).SpeechRecognition
+      ?? (window as Window & {
+        webkitSpeechRecognition?: new () => SpeechRecognition;
+      }).webkitSpeechRecognition;
+
+    if (!SpeechRecognitionCtor) {
+      this.errorMessage = 'Speech-to-text non supporte sur ce navigateur.';
+      return;
+    }
+
+    this.errorMessage = '';
+    this.listening = true;
+
+    this.speechRecognition = new SpeechRecognitionCtor();
+    this.speechRecognition.lang = 'fr-FR';
+    this.speechRecognition.interimResults = false;
+    this.speechRecognition.maxAlternatives = 1;
+
+    this.speechRecognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0][0].transcript.trim();
+      if (!transcript) {
+        return;
+      }
+
+      if (target === 'title') {
+        this.formModel.title = transcript;
+      } else {
+        this.formModel.comment = transcript;
+      }
+
+      this.cdr.detectChanges();
+    };
+
+    this.speechRecognition.onerror = () => {
+      this.errorMessage = 'Erreur de reconnaissance vocale.';
+      this.listening = false;
+      this.cdr.detectChanges();
+    };
+
+    this.speechRecognition.onend = () => {
+      this.listening = false;
+      this.cdr.detectChanges();
+    };
+
+    this.speechRecognition.start();
+  }
+
+  stopSpeechInput(): void {
+    this.speechRecognition?.stop();
+    this.listening = false;
+  }
+
+  buildShareText(item: Feedback): string {
+    return `Forum Post: ${item.title}\nAuteur: ${item.userName}\nCommentaire: ${item.comment}\nNote: ${item.rating}/5`;
+  }
+
+  shareOnWhatsapp(item: Feedback): void {
+    const text = encodeURIComponent(this.buildShareText(item));
+    window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener');
+  }
+
+  shareOnTelegram(item: Feedback): void {
+    const text = encodeURIComponent(this.buildShareText(item));
+    window.open(`https://t.me/share/url?text=${text}`, '_blank', 'noopener');
+  }
+
+  private refreshQrPayload(): void {
+    if (this.feedbacks.length === 0) {
+      this.qrPayload = JSON.stringify({ message: 'Aucun post forum' });
+      return;
+    }
+
+    const latest = this.feedbacks[0];
+    this.qrPayload = JSON.stringify({
+      id: latest.id,
+      title: latest.title,
+      author: latest.userName,
+      comment: latest.comment,
+      rating: latest.rating,
+      createdAt: latest.createdAt
+    });
   }
 }

@@ -33,6 +33,7 @@ public class ReclamationService {
         reclamation.setUserName(request.getUserName());
         reclamation.setUserEmail(request.getUserEmail());
         reclamation.setSubject(request.getSubject());
+        reclamation.setImageUrl(request.getImageUrl());
         reclamation.setDescription(request.getDescription());
         reclamation.setStatus(request.getStatus());
         return reclamationRepository.save(reclamation);

@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ReclamationService } from '../../services/reclamation.service';
 import { Reclamation, ReclamationStatus } from '../../models/reclamation.model';
+import jsPDF from 'jspdf';
 
 @Component({
   selector: 'app-reclamation-management',
@@ -14,6 +15,8 @@ export class ReclamationManagementComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
   editingId: number | null = null;
+  speaking = false;
+  ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
   readonly statuses: ReclamationStatus[] = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'];
 
@@ -21,11 +24,15 @@ export class ReclamationManagementComponent implements OnInit {
     userName: '',
     userEmail: '',
     subject: '',
+    imageUrl: '',
     description: '',
     status: 'OPEN'
   };
 
-  constructor(private readonly reclamationService: ReclamationService) {}
+  constructor(
+    private readonly reclamationService: ReclamationService,
+    private readonly cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.loadReclamations();
@@ -38,10 +45,12 @@ export class ReclamationManagementComponent implements OnInit {
       next: (data) => {
         this.reclamations = data;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.errorMessage = 'Impossible de charger les reclamations.';
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -54,6 +63,7 @@ export class ReclamationManagementComponent implements OnInit {
       userName: this.formModel.userName.trim(),
       userEmail: this.formModel.userEmail.trim(),
       subject: this.formModel.subject.trim(),
+      imageUrl: this.formModel.imageUrl?.trim(),
       description: this.formModel.description.trim(),
       status: this.formModel.status
     };
@@ -99,6 +109,7 @@ export class ReclamationManagementComponent implements OnInit {
       userName: item.userName,
       userEmail: item.userEmail,
       subject: item.subject,
+      imageUrl: item.imageUrl,
       description: item.description,
       status: item.status
     };
@@ -129,8 +140,85 @@ export class ReclamationManagementComponent implements OnInit {
       userName: '',
       userEmail: '',
       subject: '',
+      imageUrl: '',
       description: '',
       status: 'OPEN'
     };
+  }
+
+  speakReclamation(item: Reclamation): void {
+    if (!this.ttsSupported) {
+      this.errorMessage = 'Text-to-speech non supporte sur ce navigateur.';
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(
+      `Reclamation de ${item.userName}. Sujet: ${item.subject}. Description: ${item.description}. Statut: ${item.status}.`
+    );
+    utterance.lang = 'fr-FR';
+    utterance.onstart = () => {
+      this.speaking = true;
+      this.cdr.detectChanges();
+    };
+    utterance.onend = () => {
+      this.speaking = false;
+      this.cdr.detectChanges();
+    };
+    utterance.onerror = () => {
+      this.errorMessage = 'Erreur lors de la lecture vocale.';
+      this.speaking = false;
+      this.cdr.detectChanges();
+    };
+    window.speechSynthesis.speak(utterance);
+  }
+
+  stopSpeech(): void {
+    if (!this.ttsSupported) {
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    this.speaking = false;
+  }
+
+  shareOnWhatsapp(item: Reclamation): void {
+    const text = encodeURIComponent(this.buildShareText(item));
+    window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener');
+  }
+
+  shareOnTelegram(item: Reclamation): void {
+    const text = encodeURIComponent(this.buildShareText(item));
+    window.open(`https://t.me/share/url?text=${text}`, '_blank', 'noopener');
+  }
+
+  exportPdf(item: Reclamation): void {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('Reclamation', 14, 18);
+
+    doc.setFontSize(12);
+    const lines = [
+      `ID: ${item.id ?? '-'}`,
+      `Nom: ${item.userName}`,
+      `Email: ${item.userEmail}`,
+      `Sujet: ${item.subject}`,
+      `Statut: ${item.status}`,
+      `Image URL: ${item.imageUrl ?? '-'}`,
+      `Description: ${item.description}`
+    ];
+
+    let y = 30;
+    for (const line of lines) {
+      const wrapped = doc.splitTextToSize(line, 180);
+      doc.text(wrapped, 14, y);
+      y += wrapped.length * 7;
+    }
+
+    doc.save(`reclamation-${item.id ?? 'item'}.pdf`);
+  }
+
+  private buildShareText(item: Reclamation): string {
+    return `Reclamation: ${item.subject}\nAuteur: ${item.userName}\nStatut: ${item.status}\nDescription: ${item.description}`;
   }
 }

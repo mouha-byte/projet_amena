@@ -5,6 +5,7 @@ export interface Reclamation {
   userName: string;
   userEmail: string;
   subject: string;
+  imageUrl?: string;
   description: string;
   status: ReclamationStatus;
   createdAt?: string;

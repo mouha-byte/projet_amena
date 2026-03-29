@@ -21,6 +21,7 @@ public class Reclamation {
     private String userName;
     private String userEmail;
     private String subject;
+    private String imageUrl;
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -61,6 +62,14 @@ public class Reclamation {
 
     public void setSubject(String subject) {
         this.subject = subject;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public String getDescription() {

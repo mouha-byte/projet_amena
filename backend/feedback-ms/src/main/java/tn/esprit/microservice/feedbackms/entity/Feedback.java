@@ -18,6 +18,8 @@ public class Feedback {
 
     private String userName;
     private String userEmail;
+    private String title;
+    private String imageUrl;
     private Integer rating;
     private String comment;
     private LocalDateTime createdAt;
@@ -47,6 +49,22 @@ public class Feedback {
 
     public void setUserEmail(String userEmail) {
         this.userEmail = userEmail;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public Integer getRating() {

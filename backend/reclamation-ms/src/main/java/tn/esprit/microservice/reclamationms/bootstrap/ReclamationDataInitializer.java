@@ -21,6 +21,7 @@ public class ReclamationDataInitializer {
             r1.setUserName("Meriem");
             r1.setUserEmail("meriem@example.com");
             r1.setSubject("Probleme acces cours");
+            r1.setImageUrl("https://picsum.photos/seed/reclamation-1/600/300");
             r1.setDescription("Je n'arrive pas a ouvrir le module video.");
             r1.setStatus(ReclamationStatus.OPEN);
 
@@ -28,6 +29,7 @@ public class ReclamationDataInitializer {
             r2.setUserName("Hatem");
             r2.setUserEmail("hatem@example.com");
             r2.setSubject("Erreur paiement");
+            r2.setImageUrl("https://picsum.photos/seed/reclamation-2/600/300");
             r2.setDescription("Mon paiement est debite mais inscription non activee.");
             r2.setStatus(ReclamationStatus.IN_PROGRESS);
 
