@@ -1,0 +1,60 @@
+<section class="panel">
+  <h2>Gestion Feedback</h2>
+
+  <form class="form-grid" (ngSubmit)="saveFeedback()">
+    <label>
+      Nom
+      <input type="text" [(ngModel)]="formModel.userName" name="feedbackUserName" />
+    </label>
+
+    <label>
+      Email
+      <input type="email" [(ngModel)]="formModel.userEmail" name="feedbackUserEmail" />
+    </label>
+
+    <label>
+      Note (1-5)
+      <input type="number" min="1" max="5" [(ngModel)]="formModel.rating" name="feedbackRating" />
+    </label>
+
+    <label class="full">
+      Commentaire
+      <textarea rows="3" [(ngModel)]="formModel.comment" name="feedbackComment"></textarea>
+    </label>
+
+    <div class="actions full">
+      <button type="submit">{{ editingId === null ? 'Ajouter' : 'Modifier' }}</button>
+      <button type="button" class="secondary" (click)="resetForm()">Nouveau</button>
+    </div>
+  </form>
+
+  <p class="success" *ngIf="successMessage">{{ successMessage }}</p>
+  <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p *ngIf="loading">Chargement...</p>
+
+  <table *ngIf="!loading">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nom</th>
+        <th>Email</th>
+        <th>Note</th>
+        <th>Commentaire</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of feedbacks">
+        <td>{{ item.id }}</td>
+        <td>{{ item.userName }}</td>
+        <td>{{ item.userEmail }}</td>
+        <td>{{ item.rating }}</td>
+        <td>{{ item.comment }}</td>
+        <td>
+          <button type="button" class="secondary" (click)="startEdit(item)">Editer</button>
+          <button type="button" class="danger" (click)="deleteFeedback(item.id)">Supprimer</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</section>

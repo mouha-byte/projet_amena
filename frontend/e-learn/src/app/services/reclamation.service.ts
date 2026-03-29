@@ -1,0 +1,30 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { Reclamation } from '../models/reclamation.model';
+import { API_GATEWAY_URL } from './api.config';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ReclamationService {
+  private readonly baseUrl = `${API_GATEWAY_URL}/reclamations`;
+
+  constructor(private readonly http: HttpClient) {}
+
+  getAll(): Observable<Reclamation[]> {
+    return this.http.get<Reclamation[]>(this.baseUrl);
+  }
+
+  create(payload: Reclamation): Observable<Reclamation> {
+    return this.http.post<Reclamation>(this.baseUrl, payload);
+  }
+
+  update(id: number, payload: Reclamation): Observable<Reclamation> {
+    return this.http.put<Reclamation>(`${this.baseUrl}/${id}`, payload);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+}

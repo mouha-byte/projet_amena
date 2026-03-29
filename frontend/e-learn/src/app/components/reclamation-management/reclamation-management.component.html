@@ -1,0 +1,69 @@
+<section class="panel">
+  <h2>Gestion Reclamation</h2>
+
+  <form class="form-grid" (ngSubmit)="saveReclamation()">
+    <label>
+      Nom
+      <input type="text" [(ngModel)]="formModel.userName" name="reclamationUserName" />
+    </label>
+
+    <label>
+      Email
+      <input type="email" [(ngModel)]="formModel.userEmail" name="reclamationUserEmail" />
+    </label>
+
+    <label>
+      Sujet
+      <input type="text" [(ngModel)]="formModel.subject" name="reclamationSubject" />
+    </label>
+
+    <label>
+      Statut
+      <select [(ngModel)]="formModel.status" name="reclamationStatus">
+        <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+      </select>
+    </label>
+
+    <label class="full">
+      Description
+      <textarea rows="3" [(ngModel)]="formModel.description" name="reclamationDescription"></textarea>
+    </label>
+
+    <div class="actions full">
+      <button type="submit">{{ editingId === null ? 'Ajouter' : 'Modifier' }}</button>
+      <button type="button" class="secondary" (click)="resetForm()">Nouveau</button>
+    </div>
+  </form>
+
+  <p class="success" *ngIf="successMessage">{{ successMessage }}</p>
+  <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p *ngIf="loading">Chargement...</p>
+
+  <table *ngIf="!loading">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nom</th>
+        <th>Email</th>
+        <th>Sujet</th>
+        <th>Statut</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of reclamations">
+        <td>{{ item.id }}</td>
+        <td>{{ item.userName }}</td>
+        <td>{{ item.userEmail }}</td>
+        <td>{{ item.subject }}</td>
+        <td>{{ item.status }}</td>
+        <td>{{ item.description }}</td>
+        <td>
+          <button type="button" class="secondary" (click)="startEdit(item)">Editer</button>
+          <button type="button" class="danger" (click)="deleteReclamation(item.id)">Supprimer</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</section>
