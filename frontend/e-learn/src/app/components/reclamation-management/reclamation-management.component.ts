@@ -189,7 +189,8 @@ export class ReclamationManagementComponent implements OnInit {
 
   shareOnTelegram(item: Reclamation): void {
     const text = encodeURIComponent(this.buildShareText(item));
-    window.open(`https://t.me/share/url?text=${text}`, '_blank', 'noopener');
+    const url = encodeURIComponent(window.location.href);
+    window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank', 'noopener');
   }
 
   exportPdf(item: Reclamation): void {
