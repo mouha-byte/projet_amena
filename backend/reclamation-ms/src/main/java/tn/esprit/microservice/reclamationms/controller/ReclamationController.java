@@ -1,6 +1,9 @@
 package tn.esprit.microservice.reclamationms.controller;
 
 import java.util.List;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,5 +50,38 @@ public class ReclamationController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         reclamationService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping(value = "/{id}/lecture", produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> lecture(@PathVariable Long id) {
+        return ResponseEntity.ok(reclamationService.buildLectureText(id));
+    }
+
+    @PostMapping("/dictation")
+    public ResponseEntity<ReclamationService.ReclamationDictationResult> processDictation(
+            @RequestBody DictationRequest request) {
+        return ResponseEntity.ok(reclamationService.processDictation(request.text()));
+    }
+
+    @GetMapping(value = "/{id}/qrcode", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getQrCode(@PathVariable Long id) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .body(reclamationService.generateQrCode(id));
+    }
+
+    @GetMapping(value = "/{id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> exportPdf(@PathVariable Long id) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+                ContentDisposition.attachment().filename("reclamation-" + id + ".pdf").build()
+        );
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(reclamationService.generatePdf(id));
+    }
+
+    public record DictationRequest(String text) {
     }
 }

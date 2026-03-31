@@ -1,6 +1,9 @@
 package tn.esprit.microservice.feedbackms.controller;
 
 import java.util.List;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,5 +50,38 @@ public class FeedbackController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         feedbackService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping(value = "/{id}/lecture", produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> lecture(@PathVariable Long id) {
+        return ResponseEntity.ok(feedbackService.buildLectureText(id));
+    }
+
+    @PostMapping("/dictation")
+    public ResponseEntity<FeedbackService.FeedbackDictationResult> processDictation(
+            @RequestBody DictationRequest request) {
+        return ResponseEntity.ok(feedbackService.processDictation(request.text()));
+    }
+
+    @GetMapping(value = "/{id}/qrcode", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getQrCode(@PathVariable Long id) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .body(feedbackService.generateQrCode(id));
+    }
+
+    @GetMapping(value = "/{id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> exportPdf(@PathVariable Long id) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+                ContentDisposition.attachment().filename("feedback-" + id + ".pdf").build()
+        );
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(feedbackService.generatePdf(id));
+    }
+
+    public record DictationRequest(String text) {
     }
 }

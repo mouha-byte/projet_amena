@@ -1,0 +1,298 @@
+{
+  "info": {
+    "name": "E-Learn - Nouvelles APIs Feedback/Reclamation",
+    "description": "Collection Postman pour tester les nouvelles APIs backend: lecture, dictation, QR code et PDF.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8085" },
+    { "key": "feedbackId", "value": "" },
+    { "key": "reclamationId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Feedbacks - Nouvelles APIs",
+      "item": [
+        {
+          "name": "POST Create Feedback (set feedbackId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Feedback id exists', function () {",
+                  "  pm.expect(data).to.have.property('id');",
+                  "});",
+                  "pm.collectionVariables.set('feedbackId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"Sara\",\n  \"userEmail\": \"sara@mail.com\",\n  \"title\": \"Tres bien\",\n  \"imageUrl\": \"https://img.com/fb.png\",\n  \"rating\": 5,\n  \"comment\": \"Excellent cours\"\n}"
+            },
+            "url": "{{baseUrl}}/feedbacks"
+          }
+        },
+        {
+          "name": "GET Feedback Lecture Text",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is text/plain', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('text/plain');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/feedbacks/{{feedbackId}}/lecture"
+          }
+        },
+        {
+          "name": "POST Feedback Dictation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Dictation fields exist', function () {",
+                  "  pm.expect(data).to.have.property('cleanedText');",
+                  "  pm.expect(data).to.have.property('suggestedTitle');",
+                  "  pm.expect(data).to.have.property('suggestedComment');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Mon avis dicte pour le forum. Le contenu est clair et utile pour debuter avec Spring Boot.\"\n}"
+            },
+            "url": "{{baseUrl}}/feedbacks/dictation"
+          }
+        },
+        {
+          "name": "GET Feedback QR Code (PNG)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is image/png', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('image/png');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/feedbacks/{{feedbackId}}/qrcode"
+          }
+        },
+        {
+          "name": "GET Feedback PDF",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/pdf', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/feedbacks/{{feedbackId}}/pdf"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reclamations - Nouvelles APIs",
+      "item": [
+        {
+          "name": "POST Create Reclamation (set reclamationId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Reclamation id exists', function () {",
+                  "  pm.expect(data).to.have.property('id');",
+                  "});",
+                  "pm.collectionVariables.set('reclamationId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"Karim\",\n  \"userEmail\": \"karim@mail.com\",\n  \"subject\": \"Probleme video\",\n  \"imageUrl\": \"https://img.com/rec.png\",\n  \"description\": \"La video ne demarre pas\",\n  \"status\": \"OPEN\"\n}"
+            },
+            "url": "{{baseUrl}}/reclamations"
+          }
+        },
+        {
+          "name": "GET Reclamation Lecture Text",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is text/plain', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('text/plain');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/reclamations/{{reclamationId}}/lecture"
+          }
+        },
+        {
+          "name": "POST Reclamation Dictation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Dictation fields exist', function () {",
+                  "  pm.expect(data).to.have.property('cleanedText');",
+                  "  pm.expect(data).to.have.property('suggestedSubject');",
+                  "  pm.expect(data).to.have.property('suggestedDescription');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Je dicte ma reclamation. Je narrive pas a ouvrir la section des videos depuis hier.\"\n}"
+            },
+            "url": "{{baseUrl}}/reclamations/dictation"
+          }
+        },
+        {
+          "name": "GET Reclamation QR Code (PNG)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is image/png', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('image/png');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/reclamations/{{reclamationId}}/qrcode"
+          }
+        },
+        {
+          "name": "GET Reclamation PDF",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/pdf', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/reclamations/{{reclamationId}}/pdf"
+          }
+        }
+      ]
+    }
+  ]
+}
