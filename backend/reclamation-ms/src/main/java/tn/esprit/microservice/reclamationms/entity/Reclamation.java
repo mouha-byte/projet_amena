@@ -1,5 +1,6 @@
 package tn.esprit.microservice.reclamationms.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -22,7 +23,22 @@ public class Reclamation {
     private String userEmail;
     private String subject;
     private String imageUrl;
+    private Integer rating;
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    private ReclamationClassificationLevel classificationLevel;
+
+    private Integer classificationScore;
+
+    @Column(length = 500)
+    private String classificationKeywords;
+
+    @Column(length = 1000)
+    private String classificationReason;
+
+    private String classifiedBy;
+    private LocalDateTime classifiedAt;
 
     @Enumerated(EnumType.STRING)
     private ReclamationStatus status;
@@ -80,6 +96,62 @@ public class Reclamation {
         this.description = description;
     }
 
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
+    }
+
+    public ReclamationClassificationLevel getClassificationLevel() {
+        return classificationLevel;
+    }
+
+    public void setClassificationLevel(ReclamationClassificationLevel classificationLevel) {
+        this.classificationLevel = classificationLevel;
+    }
+
+    public Integer getClassificationScore() {
+        return classificationScore;
+    }
+
+    public void setClassificationScore(Integer classificationScore) {
+        this.classificationScore = classificationScore;
+    }
+
+    public String getClassificationKeywords() {
+        return classificationKeywords;
+    }
+
+    public void setClassificationKeywords(String classificationKeywords) {
+        this.classificationKeywords = classificationKeywords;
+    }
+
+    public String getClassificationReason() {
+        return classificationReason;
+    }
+
+    public void setClassificationReason(String classificationReason) {
+        this.classificationReason = classificationReason;
+    }
+
+    public String getClassifiedBy() {
+        return classifiedBy;
+    }
+
+    public void setClassifiedBy(String classifiedBy) {
+        this.classifiedBy = classifiedBy;
+    }
+
+    public LocalDateTime getClassifiedAt() {
+        return classifiedAt;
+    }
+
+    public void setClassifiedAt(LocalDateTime classifiedAt) {
+        this.classifiedAt = classifiedAt;
+    }
+
     public ReclamationStatus getStatus() {
         return status;
     }
@@ -103,6 +175,21 @@ public class Reclamation {
         }
         if (this.status == null) {
             this.status = ReclamationStatus.OPEN;
+        }
+        if (this.rating == null) {
+            this.rating = 3;
+        }
+        if (this.classificationLevel == null) {
+            this.classificationLevel = ReclamationClassificationLevel.MOYEN;
+        }
+        if (this.classificationScore == null) {
+            this.classificationScore = 0;
+        }
+        if (this.classificationKeywords == null) {
+            this.classificationKeywords = "";
+        }
+        if (this.classificationReason == null) {
+            this.classificationReason = "NOT_CLASSIFIED";
         }
     }
 }

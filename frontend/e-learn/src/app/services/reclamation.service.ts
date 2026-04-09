@@ -1,8 +1,21 @@
-import { Injectable } from '@angular/core';
+  import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Reclamation } from '../models/reclamation.model';
 import { API_GATEWAY_URL } from './api.config';
+
+export interface ReclamationRatingSummary {
+  averageRating: number;
+  reclamationCount: number;
+  ratedReclamationCount: number;
+  rankedCourseCount: number;
+}
+
+export interface ReclamationCourseRatingStats {
+  courseTitle: string;
+  averageRating: number;
+  reclamationCount: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -30,5 +43,17 @@ export class ReclamationService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  getRatingSummary(): Observable<ReclamationRatingSummary> {
+    return this.http.get<ReclamationRatingSummary>(`${this.baseUrl}/ratings/summary`);
+  }
+
+  getRatingsByCourse(): Observable<ReclamationCourseRatingStats[]> {
+    return this.http.get<ReclamationCourseRatingStats[]>(`${this.baseUrl}/ratings/by-course`);
+  }
+
+  getRatingsRanking(top = 5): Observable<ReclamationCourseRatingStats[]> {
+    return this.http.get<ReclamationCourseRatingStats[]>(`${this.baseUrl}/ratings/ranking?top=${top}`);
   }
 }

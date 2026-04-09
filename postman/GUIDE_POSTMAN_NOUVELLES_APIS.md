@@ -1,170 +1,276 @@
-# Guide Postman Step by Step - Nouvelles APIs
+# Guide Postman Step by Step - Nouvelles APIs Backend
 
-Ce guide explique pas a pas comment tester les nouvelles APIs backend de:
-- feedbacks
-- reclamations
+Ce guide permet de tester directement le backend:
+- moderation automatique feedback
+- systeme de rating par cours (feedback + reclamation)
+- classification automatique des reclamations (IA locale)
+- communication microservice (feedback negatif => reclamation auto)
+- lecture, dictee, QR code, PDF
 
-APIs concernees:
-- lecture
-- dictee
-- qrcode
-- pdf
+Guide rapide cible (stats + classifications + auto reclamation):
+- e-learn-main/postman/GUIDE_POSTMAN_TEST_STATS_CLASSIFICATION.md
 
-## 0) Prerequis
+## 1) Prerequis
 
-1. Java et Maven doivent etre installes.
-2. Postman doit etre installe.
-3. Les microservices doivent etre demarres.
+1. Java et Maven installes.
+2. Postman installe.
+3. Services demarres:
+   1. eureka-server (8761)
+   2. config-server (8888)
+   3. feedback-ms (8090)
+   4. reclamation-ms (8091)
+   5. gateway (8085)
 
-Ordre recommande:
-1. eureka-server (8761)
-2. config-server (8888)
-3. feedback-ms (8090)
-4. reclamation-ms (8091)
-5. gateway (8085)
-
-## 1) Importer la collection Postman
+## 2) Import Postman
 
 1. Ouvre Postman.
-2. Clique sur Import.
-3. Selectionne le fichier:
+2. Clique Import.
+3. Importe le fichier:
    - e-learn-main/postman/e-learn-new-apis.postman_collection.json
-4. Valide l import.
+4. Verifie la variable:
+   - baseUrl = http://localhost:8085
 
-## 2) Configurer les variables
+Variables utiles:
+- baseUrl
+- feedbackId
+- reclamationId
+- autoReclamationId
+- feedbackTitle
 
-Tu peux utiliser les variables de collection deja presentes:
-- baseUrl = http://localhost:8085
-- feedbackId = vide au depart
-- reclamationId = vide au depart
+## 3) Metier avance 1 - Moderation auto feedback
 
-Si besoin, modifie baseUrl selon ton environnement.
+Dossier: Feedbacks - Moderation Automatique + Rating
 
-## 3) Test complet Feedbacks
+### Etape 1 - Feedback normal
 
-Dossier Postman: Feedbacks - Nouvelles APIs
-
-### Etape 1 - Creer un feedback
-
-1. Lance: POST Create Feedback (set feedbackId)
-2. Verifie status 200.
-3. Le script Postman enregistre automatiquement feedbackId.
-
-### Etape 2 - Tester lecture
-
-1. Lance: GET Feedback Lecture Text
+1. Lance: POST Create Feedback Normal (set feedbackId)
 2. Verifie:
-   - status 200
-   - Content-Type contient text/plain
-3. Le body doit contenir une phrase de lecture du feedback.
+   - status = 200
+   - moderationStatus = APPROVED
+   - moderationScore present
 
-### Etape 3 - Tester dictee
+### Etape 2 - Feedback risque
 
-1. Lance: POST Feedback Dictation
+1. Lance: POST Create Feedback Risky (set feedbackId)
 2. Verifie:
-   - status 200
-   - reponse JSON avec:
-     - cleanedText
-     - suggestedTitle
-     - suggestedComment
+   - status = 200
+   - moderationStatus = REJECTED
+   - moderationFlagged = true
 
-### Etape 4 - Tester QR code
+### Etape 3 - Verification detail
 
-1. Lance: GET Feedback QR Code (PNG)
+1. Lance: GET Feedback By Id
 2. Verifie:
-   - status 200
-   - Content-Type contient image/png
-3. Dans Postman, tu peux voir Preview pour afficher l image.
+   - moderationStatus
+   - moderationScore
+   - blockedWords
 
-### Etape 5 - Tester PDF
+### Etape 4 - Analyse seule
 
-1. Lance: GET Feedback PDF
+1. Lance: POST Feedback Moderation Analyze
 2. Verifie:
-   - status 200
-   - Content-Type contient application/pdf
-3. Clique Save Response pour enregistrer le PDF si necessaire.
+   - score
+   - flagged
+   - blockedWords
+   - recommendation
 
-## 4) Test complet Reclamations
+## 4) Metier avance 2 - Rating par cours feedback
 
-Dossier Postman: Reclamations - Nouvelles APIs
+### Etape 1 - Resume global
 
-### Etape 1 - Creer une reclamation
+1. Lance: GET Feedback Ratings Summary
+2. Verifie:
+   - averageRating
+   - feedbackCount
+   - ratedFeedbackCount
+   - rankedCourseCount
+
+### Etape 2 - Moyenne par cours
+
+1. Lance: GET Feedback Ratings By Course
+2. Verifie pour chaque ligne:
+   - courseTitle
+   - averageRating
+   - feedbackCount
+
+### Etape 3 - Classement des cours
+
+1. Lance: GET Feedback Ratings Ranking (Top 5)
+2. Verifie:
+   - tri du meilleur rating vers le plus faible
+
+### Etape 4 - Listes de moderation
+
+1. Lance: GET Approved Feedbacks
+2. Lance: GET Blocked Feedbacks
+
+## 5) Metier avance 2 - Communication microservice (feedback negatif)
+
+Objectif: verifier que le backend cree automatiquement une reclamation si le feedback est negatif.
+
+### Etape 1 - Creer un feedback negatif
+
+1. Lance: POST Create Feedback Negative (Auto Reclamation)
+2. Verifie dans la reponse:
+   - autoReclamationCreated = true
+   - linkedReclamationId present
+   - autoReclamationStatus = CREATED
+
+### Etape 2 - Verifier le feedback lie
+
+1. Lance: GET Feedback By Id
+2. Verifie:
+   - linkedReclamationId present
+   - autoReclamationStatus present
+
+### Etape 3 - Verifier la reclamation creee automatiquement
+
+1. Lance: GET Auto Reclamation By Linked Id
+2. Verifie:
+   - subject == feedbackTitle (mapping title forum -> subject reclamation)
+   - status == OPEN
+
+### Etape 4 - Verification directe reclamation
+
+1. Lance: GET Reclamation By Id (avec reclamationId)
+2. Verifie l objet retourne.
+
+## 6) Classification automatique des reclamations (IA locale)
+
+Objectif: classer automatiquement les reclamations en FAIBLE/MOYEN/FORT selon le texte.
+
+### Etape 1 - Cas faible (GPS)
+
+1. Lance: POST Create Reclamation Low Classification (GPS)
+2. Verifie:
+   - classificationLevel = FAIBLE
+   - classificationScore present
+
+### Etape 2 - Cas fort (retard intervention)
+
+1. Lance: POST Create Reclamation High Classification (Retard Intervention)
+2. Verifie:
+   - classificationLevel = FORT
+   - classificationScore >= 70
+
+### Etape 3 - Analyse seule sans creation
+
+1. Lance: POST Reclamation Classification Analyze
+2. Verifie:
+   - level
+   - score
+   - matchedKeywords
+   - reason
+
+### Etape 4 - Filtrer les reclamations classees FORT
+
+1. Lance: GET Reclamations By Classification FORT
+2. Verifie la liste retournee.
+
+## 7) Metier avance 2 - Rating par cours reclamation
+
+Dossier: Reclamations - Rating + Nouvelles APIs
+
+### Etape 1 - Creer reclamation avec note
 
 1. Lance: POST Create Reclamation (set reclamationId)
-2. Verifie status 200.
-3. Le script Postman enregistre automatiquement reclamationId.
-
-### Etape 2 - Tester lecture
-
-1. Lance: GET Reclamation Lecture Text
 2. Verifie:
-   - status 200
-   - Content-Type contient text/plain
-3. Le body doit contenir une phrase de lecture de la reclamation.
+   - status = 200
+   - rating present
 
-### Etape 3 - Tester dictee
+### Etape 2 - Resume global reclamation
 
-1. Lance: POST Reclamation Dictation
+1. Lance: GET Reclamation Ratings Summary
 2. Verifie:
-   - status 200
-   - reponse JSON avec:
-     - cleanedText
-     - suggestedSubject
-     - suggestedDescription
+   - averageRating
+   - reclamationCount
+   - ratedReclamationCount
+   - rankedCourseCount
 
-### Etape 4 - Tester QR code
+### Etape 3 - Moyenne par cours reclamation
 
-1. Lance: GET Reclamation QR Code (PNG)
+1. Lance: GET Reclamation Ratings By Course
 2. Verifie:
-   - status 200
-   - Content-Type contient image/png
-3. Affiche l image via Preview dans Postman.
+   - courseTitle
+   - averageRating
+   - reclamationCount
 
-### Etape 5 - Tester PDF
+### Etape 4 - Classement cours reclamation
 
-1. Lance: GET Reclamation PDF
-2. Verifie:
-   - status 200
-   - Content-Type contient application/pdf
-3. Sauvegarde le fichier si tu veux verifier le contenu.
+1. Lance: GET Reclamation Ratings Ranking (Top 5)
+2. Verifie le tri.
 
-## 5) Endpoints backend utilises
+## 8) APIs annexes feedback/reclamation
+
+Feedback:
+1. GET Feedback Lecture Text
+2. POST Feedback Dictation
+3. GET Feedback QR Code (PNG)
+4. GET Feedback PDF
+
+Reclamation:
+1. GET Reclamation Lecture Text
+2. POST Reclamation Dictation
+3. GET Reclamation QR Code (PNG)
+4. GET Reclamation PDF
+
+## 9) Endpoints backend utilises
 
 Feedbacks:
+- GET /feedbacks
+- GET /feedbacks/{id}
+- POST /feedbacks
+- PUT /feedbacks/{id}
+- DELETE /feedbacks/{id}
+- GET /feedbacks/approved
+- GET /feedbacks/blocked
+- GET /feedbacks/ratings/summary
+- GET /feedbacks/ratings/by-course
+- GET /feedbacks/ratings/ranking?top=5
+- POST /feedbacks/moderation/analyze
 - GET /feedbacks/{id}/lecture
 - POST /feedbacks/dictation
 - GET /feedbacks/{id}/qrcode
 - GET /feedbacks/{id}/pdf
 
 Reclamations:
+- GET /reclamations
+- GET /reclamations/{id}
+- POST /reclamations
+- PUT /reclamations/{id}
+- DELETE /reclamations/{id}
+- POST /reclamations/classification/analyze
+- GET /reclamations/classification/{level}
+- GET /reclamations/ratings/summary
+- GET /reclamations/ratings/by-course
+- GET /reclamations/ratings/ranking?top=5
 - GET /reclamations/{id}/lecture
 - POST /reclamations/dictation
 - GET /reclamations/{id}/qrcode
 - GET /reclamations/{id}/pdf
 
-## 6) Erreurs frequentes et solutions
+## 10) Config utiles
+
+feedback:
+- feedback.moderation.blocked-words
+- feedback.moderation.auto-block-threshold
+- feedback.auto-reclamation.enabled
+- feedback.auto-reclamation.negative-threshold
+
+reclamation:
+- reclamation.classification.high-keywords
+- reclamation.classification.medium-keywords
+- reclamation.classification.low-keywords
+- reclamation.classification.high-threshold
+- reclamation.classification.medium-threshold
+
+## 11) Erreurs frequentes
 
 1. 404 Not Found
-- Verifie que le service gateway est demarre.
-- Verifie baseUrl.
-- Verifie que feedbackId/reclamationId ne sont pas vides.
+- verifier gateway et baseUrl
 
-2. 500 Internal Server Error
-- Verifie les logs de feedback-ms et reclamation-ms.
-- Verifie que l ID existe vraiment en base.
+2. Variables vides
+- relancer POST create feedback/reclamation pour remplir feedbackId/reclamationId
 
-3. Variables non remplies
-- Relance les requetes de creation (POST Create Feedback / POST Create Reclamation).
-
-## 7) Ordre de test rapide conseille
-
-1. POST Create Feedback
-2. GET Feedback Lecture
-3. POST Feedback Dictation
-4. GET Feedback QR Code
-5. GET Feedback PDF
-6. POST Create Reclamation
-7. GET Reclamation Lecture
-8. POST Reclamation Dictation
-9. GET Reclamation QR Code
-10. GET Reclamation PDF
+3. 500 Internal Server Error
+- verifier logs feedback-ms et reclamation-ms

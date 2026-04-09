@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import tn.esprit.microservice.reclamationms.entity.ReclamationClassificationLevel;
 import tn.esprit.microservice.reclamationms.entity.Reclamation;
 import tn.esprit.microservice.reclamationms.service.ReclamationService;
 
@@ -44,6 +46,34 @@ public class ReclamationController {
     @PutMapping("/{id}")
     public ResponseEntity<Reclamation> update(@PathVariable Long id, @RequestBody Reclamation reclamation) {
         return ResponseEntity.ok(reclamationService.update(id, reclamation));
+    }
+
+    @GetMapping("/classification/{level}")
+    public List<Reclamation> getByClassification(@PathVariable ReclamationClassificationLevel level) {
+        return reclamationService.findByClassificationLevel(level);
+    }
+
+    @PostMapping("/classification/analyze")
+    public ResponseEntity<ReclamationService.ClassificationPreview> analyzeClassification(
+            @RequestBody ClassificationAnalyzeRequest request) {
+        return ResponseEntity.ok(reclamationService.analyzeClassification(request.subject(), request.description()));
+    }
+
+    @GetMapping("/ratings/summary")
+    public ResponseEntity<ReclamationService.ReclamationRatingSummary> getRatingSummary() {
+        return ResponseEntity.ok(reclamationService.getRatingSummary());
+    }
+
+    @GetMapping("/ratings/by-course")
+    public ResponseEntity<List<ReclamationService.ReclamationCourseRatingStats>> getRatingsByCourse() {
+        return ResponseEntity.ok(reclamationService.getCourseRatingStats());
+    }
+
+    @GetMapping("/ratings/ranking")
+    public ResponseEntity<List<ReclamationService.ReclamationCourseRatingStats>> getRatingsRanking(
+            @RequestParam(defaultValue = "5") int top
+    ) {
+        return ResponseEntity.ok(reclamationService.getCourseRanking(top));
     }
 
     @DeleteMapping("/{id}")
@@ -83,5 +113,8 @@ public class ReclamationController {
     }
 
     public record DictationRequest(String text) {
+    }
+
+    public record ClassificationAnalyzeRequest(String subject, String description) {
     }
 }

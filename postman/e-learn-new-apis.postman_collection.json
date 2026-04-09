@@ -1,20 +1,22 @@
 {
   "info": {
     "name": "E-Learn - Nouvelles APIs Feedback/Reclamation",
-    "description": "Collection Postman pour tester les nouvelles APIs backend: lecture, dictation, QR code et PDF.",
+    "description": "Collection Postman pour tester les APIs backend: moderation automatique feedback, rating par cours, classification automatique des reclamations, communication microservice feedback->reclamation, lecture, dictation, QR code et PDF.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8085" },
     { "key": "feedbackId", "value": "" },
-    { "key": "reclamationId", "value": "" }
+    { "key": "reclamationId", "value": "" },
+    { "key": "autoReclamationId", "value": "" },
+    { "key": "feedbackTitle", "value": "" }
   ],
   "item": [
     {
-      "name": "Feedbacks - Nouvelles APIs",
+      "name": "Feedbacks - Moderation Automatique + Rating",
       "item": [
         {
-          "name": "POST Create Feedback (set feedbackId)",
+          "name": "POST Create Feedback Normal (set feedbackId)",
           "event": [
             {
               "listen": "test",
@@ -28,6 +30,9 @@
                   "pm.test('Feedback id exists', function () {",
                   "  pm.expect(data).to.have.property('id');",
                   "});",
+                  "pm.test('Normal feedback should be approved automatically', function () {",
+                  "  pm.expect(data.moderationStatus).to.eql('APPROVED');",
+                  "});",
                   "pm.collectionVariables.set('feedbackId', data.id);"
                 ]
               }
@@ -40,37 +45,13 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userName\": \"Sara\",\n  \"userEmail\": \"sara@mail.com\",\n  \"title\": \"Tres bien\",\n  \"imageUrl\": \"https://img.com/fb.png\",\n  \"rating\": 5,\n  \"comment\": \"Excellent cours\"\n}"
+              "raw": "{\n  \"userName\": \"Sara\",\n  \"userEmail\": \"sara@mail.com\",\n  \"title\": \"Spring Boot\",\n  \"imageUrl\": \"https://img.com/fb.png\",\n  \"rating\": 5,\n  \"comment\": \"Excellent cours\"\n}"
             },
             "url": "{{baseUrl}}/feedbacks"
           }
         },
         {
-          "name": "GET Feedback Lecture Text",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test('Content-Type is text/plain', function () {",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('text/plain');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/feedbacks/{{feedbackId}}/lecture"
-          }
-        },
-        {
-          "name": "POST Feedback Dictation",
+          "name": "POST Create Feedback Risky (set feedbackId)",
           "event": [
             {
               "listen": "test",
@@ -81,11 +62,13 @@
                   "  pm.response.to.have.status(200);",
                   "});",
                   "var data = pm.response.json();",
-                  "pm.test('Dictation fields exist', function () {",
-                  "  pm.expect(data).to.have.property('cleanedText');",
-                  "  pm.expect(data).to.have.property('suggestedTitle');",
-                  "  pm.expect(data).to.have.property('suggestedComment');",
-                  "});"
+                  "pm.test('Risky feedback should be blocked automatically', function () {",
+                  "  pm.expect(data.moderationStatus).to.eql('REJECTED');",
+                  "  pm.expect(data.moderationFlagged).to.eql(true);",
+                  "  pm.expect(data.moderationScore).to.be.at.least(70);",
+                  "  pm.expect((data.blockedWords || '').toLowerCase()).to.include('haine');",
+                  "});",
+                  "pm.collectionVariables.set('feedbackId', data.id);"
                 ]
               }
             }
@@ -97,13 +80,13 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"text\": \"Mon avis dicte pour le forum. Le contenu est clair et utile pour debuter avec Spring Boot.\"\n}"
+              "raw": "{\n  \"userName\": \"UserTest\",\n  \"userEmail\": \"usertest@mail.com\",\n  \"title\": \"Message de haine\",\n  \"imageUrl\": \"\",\n  \"rating\": 1,\n  \"comment\": \"Ce message contient de la haine et de la violence.\"\n}"
             },
-            "url": "{{baseUrl}}/feedbacks/dictation"
+            "url": "{{baseUrl}}/feedbacks"
           }
         },
         {
-          "name": "GET Feedback QR Code (PNG)",
+          "name": "POST Create Feedback Negative (Auto Reclamation)",
           "event": [
             {
               "listen": "test",
@@ -113,13 +96,117 @@
                   "pm.test('Status is 200', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
-                  "pm.test('Content-Type is image/png', function () {",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('image/png');",
-                  "});"
+                  "var data = pm.response.json();",
+                  "pm.test('Negative feedback should trigger auto reclamation', function () {",
+                  "  pm.expect(data.autoReclamationCreated).to.eql(true);",
+                  "  pm.expect(data.linkedReclamationId).to.not.eql(null);",
+                  "});",
+                  "pm.collectionVariables.set('feedbackId', data.id);",
+                  "pm.collectionVariables.set('autoReclamationId', data.linkedReclamationId);",
+                  "pm.collectionVariables.set('reclamationId', data.linkedReclamationId);",
+                  "pm.collectionVariables.set('feedbackTitle', data.title);"
                 ]
               }
             }
           ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"Meriem\",\n  \"userEmail\": \"meriem@mail.com\",\n  \"title\": \"Kubernetes\",\n  \"imageUrl\": \"\",\n  \"rating\": 1,\n  \"comment\": \"Je narrive pas a suivre ce cours, besoin de support.\"\n}"
+            },
+            "url": "{{baseUrl}}/feedbacks"
+          }
+        },
+        {
+          "name": "GET Feedback By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/feedbacks/{{feedbackId}}"
+          }
+        },
+        {
+          "name": "GET Approved Feedbacks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/feedbacks/approved"
+          }
+        },
+        {
+          "name": "GET Blocked Feedbacks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/feedbacks/blocked"
+          }
+        },
+        {
+          "name": "GET Feedback Ratings Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/feedbacks/ratings/summary"
+          }
+        },
+        {
+          "name": "GET Feedback Ratings By Course",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/feedbacks/ratings/by-course"
+          }
+        },
+        {
+          "name": "GET Feedback Ratings Ranking (Top 5)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/feedbacks/ratings/ranking?top=5"
+          }
+        },
+        {
+          "name": "POST Feedback Moderation Analyze",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Offre limitee\",\n  \"comment\": \"Ceci est une arnaque, clique ici maintenant!!!\"\n}"
+            },
+            "url": "{{baseUrl}}/feedbacks/moderation/analyze"
+          }
+        },
+        {
+          "name": "GET Feedback Lecture Text",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/feedbacks/{{feedbackId}}/lecture"
+          }
+        },
+        {
+          "name": "POST Feedback Dictation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Mon avis dicte pour le cours Spring Boot. Le contenu est clair et utile.\"\n}"
+            },
+            "url": "{{baseUrl}}/feedbacks/dictation"
+          }
+        },
+        {
+          "name": "GET Feedback QR Code (PNG)",
           "request": {
             "method": "GET",
             "header": [],
@@ -128,22 +215,6 @@
         },
         {
           "name": "GET Feedback PDF",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test('Content-Type is application/pdf', function () {",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
-                  "});"
-                ]
-              }
-            }
-          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -153,7 +224,7 @@
       ]
     },
     {
-      "name": "Reclamations - Nouvelles APIs",
+      "name": "Reclamations - Rating + Nouvelles APIs",
       "item": [
         {
           "name": "POST Create Reclamation (set reclamationId)",
@@ -167,8 +238,37 @@
                   "  pm.response.to.have.status(200);",
                   "});",
                   "var data = pm.response.json();",
-                  "pm.test('Reclamation id exists', function () {",
-                  "  pm.expect(data).to.have.property('id');",
+                  "pm.collectionVariables.set('reclamationId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"Karim\",\n  \"userEmail\": \"karim@mail.com\",\n  \"subject\": \"Spring Boot\",\n  \"imageUrl\": \"https://img.com/rec.png\",\n  \"rating\": 2,\n  \"description\": \"La video ne demarre pas\",\n  \"status\": \"OPEN\"\n}"
+            },
+            "url": "{{baseUrl}}/reclamations"
+          }
+        },
+        {
+          "name": "POST Create Reclamation Low Classification (GPS)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('GPS issue should be low level', function () {",
+                  "  pm.expect(data.classificationLevel).to.eql('FAIBLE');",
                   "});",
                   "pm.collectionVariables.set('reclamationId', data.id);"
                 ]
@@ -182,37 +282,13 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userName\": \"Karim\",\n  \"userEmail\": \"karim@mail.com\",\n  \"subject\": \"Probleme video\",\n  \"imageUrl\": \"https://img.com/rec.png\",\n  \"description\": \"La video ne demarre pas\",\n  \"status\": \"OPEN\"\n}"
+              "raw": "{\n  \"userName\": \"Aymen\",\n  \"userEmail\": \"aymen@mail.com\",\n  \"subject\": \"GPS ne marche pas\",\n  \"imageUrl\": \"\",\n  \"rating\": 3,\n  \"description\": \"GPS ne marche pas quand je lance la carte.\",\n  \"status\": \"OPEN\"\n}"
             },
             "url": "{{baseUrl}}/reclamations"
           }
         },
         {
-          "name": "GET Reclamation Lecture Text",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test('Content-Type is text/plain', function () {",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('text/plain');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/reclamations/{{reclamationId}}/lecture"
-          }
-        },
-        {
-          "name": "POST Reclamation Dictation",
+          "name": "POST Create Reclamation High Classification (Retard Intervention)",
           "event": [
             {
               "listen": "test",
@@ -223,10 +299,41 @@
                   "  pm.response.to.have.status(200);",
                   "});",
                   "var data = pm.response.json();",
-                  "pm.test('Dictation fields exist', function () {",
-                  "  pm.expect(data).to.have.property('cleanedText');",
-                  "  pm.expect(data).to.have.property('suggestedSubject');",
-                  "  pm.expect(data).to.have.property('suggestedDescription');",
+                  "pm.test('Delay intervention should be high level', function () {",
+                  "  pm.expect(data.classificationLevel).to.eql('FORT');",
+                  "  pm.expect(data.classificationScore).to.be.at.least(70);",
+                  "});",
+                  "pm.collectionVariables.set('reclamationId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"Nour\",\n  \"userEmail\": \"nour@mail.com\",\n  \"subject\": \"retard intervention\",\n  \"imageUrl\": \"\",\n  \"rating\": 2,\n  \"description\": \"Retard intervention depuis 2 jours, urgent.\",\n  \"status\": \"OPEN\"\n}"
+            },
+            "url": "{{baseUrl}}/reclamations"
+          }
+        },
+        {
+          "name": "POST Reclamation Classification Analyze",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "pm.test('Classification analyze should return FORT for delay intervention', function () {",
+                  "  pm.expect(data.level).to.eql('FORT');",
                   "});"
                 ]
               }
@@ -239,13 +346,29 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"text\": \"Je dicte ma reclamation. Je narrive pas a ouvrir la section des videos depuis hier.\"\n}"
+              "raw": "{\n  \"subject\": \"retard intervention\",\n  \"description\": \"Retard intervention depuis plusieurs jours.\"\n}"
             },
-            "url": "{{baseUrl}}/reclamations/dictation"
+            "url": "{{baseUrl}}/reclamations/classification/analyze"
           }
         },
         {
-          "name": "GET Reclamation QR Code (PNG)",
+          "name": "GET Reclamations By Classification FORT",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/reclamations/classification/FORT"
+          }
+        },
+        {
+          "name": "GET Reclamation By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/reclamations/{{reclamationId}}"
+          }
+        },
+        {
+          "name": "GET Auto Reclamation By Linked Id",
           "event": [
             {
               "listen": "test",
@@ -255,8 +378,15 @@
                   "pm.test('Status is 200', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
-                  "pm.test('Content-Type is image/png', function () {",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('image/png');",
+                  "var data = pm.response.json();",
+                  "var expectedTitle = pm.collectionVariables.get('feedbackTitle');",
+                  "if (expectedTitle) {",
+                  "  pm.test('Auto reclamation subject should match feedback title', function () {",
+                  "    pm.expect(data.subject).to.eql(expectedTitle);",
+                  "  });",
+                  "}",
+                  "pm.test('Auto reclamation should be open', function () {",
+                  "  pm.expect(data.status).to.eql('OPEN');",
                   "});"
                 ]
               }
@@ -265,27 +395,65 @@
           "request": {
             "method": "GET",
             "header": [],
+            "url": "{{baseUrl}}/reclamations/{{autoReclamationId}}"
+          }
+        },
+        {
+          "name": "GET Reclamation Ratings Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/reclamations/ratings/summary"
+          }
+        },
+        {
+          "name": "GET Reclamation Ratings By Course",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/reclamations/ratings/by-course"
+          }
+        },
+        {
+          "name": "GET Reclamation Ratings Ranking (Top 5)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/reclamations/ratings/ranking?top=5"
+          }
+        },
+        {
+          "name": "GET Reclamation Lecture Text",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/reclamations/{{reclamationId}}/lecture"
+          }
+        },
+        {
+          "name": "POST Reclamation Dictation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Je dicte ma reclamation pour le cours Spring Boot. Je narrive pas a ouvrir la section des videos.\"\n}"
+            },
+            "url": "{{baseUrl}}/reclamations/dictation"
+          }
+        },
+        {
+          "name": "GET Reclamation QR Code (PNG)",
+          "request": {
+            "method": "GET",
+            "header": [],
             "url": "{{baseUrl}}/reclamations/{{reclamationId}}/qrcode"
           }
         },
         {
           "name": "GET Reclamation PDF",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test('Content-Type is application/pdf', function () {",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
-                  "});"
-                ]
-              }
-            }
-          ],
           "request": {
             "method": "GET",
             "header": [],

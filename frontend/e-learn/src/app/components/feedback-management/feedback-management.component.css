@@ -219,6 +219,120 @@ button.danger {
   line-height: 1.4;
 }
 
+.stats-panel {
+  background: linear-gradient(145deg, #f2f6ff 0%, #edf4ff 100%);
+}
+
+.stats-grid {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.mini-stat {
+  border: 1px solid #d6e1ff;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 9px 10px;
+}
+
+.mini-stat span {
+  display: block;
+  font-size: 12px;
+  color: #637090;
+}
+
+.mini-stat strong {
+  display: block;
+  margin-top: 4px;
+  color: #243764;
+  font-size: 16px;
+}
+
+.ranking-panel {
+  background: linear-gradient(155deg, #f8faff 0%, #f3f7ff 100%);
+}
+
+.ranking-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.ranking-list li {
+  border: 1px solid #dbe6ff;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.ranking-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.rank-index {
+  font-size: 12px;
+  font-weight: 700;
+  color: #3953bb;
+  background: #edf2ff;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.rank-title {
+  font-size: 13px;
+  color: #2f3d60;
+  font-weight: 600;
+}
+
+.rank-score {
+  font-size: 12px;
+  color: #41537f;
+  font-weight: 700;
+}
+
+.ranking-bar-track {
+  margin-top: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #e7ecfb;
+  overflow: hidden;
+}
+
+.ranking-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4f69f4 0%, #87a0ff 100%);
+}
+
+.ranking-list small {
+  display: block;
+  margin-top: 6px;
+  color: #6b7897;
+  font-size: 12px;
+}
+
+.ranking-list li.elite .ranking-bar-fill {
+  background: linear-gradient(90deg, #236f3b 0%, #4abf7c 100%);
+}
+
+.ranking-list li.good .ranking-bar-fill {
+  background: linear-gradient(90deg, #2f5fc4 0%, #5f8ff1 100%);
+}
+
+.ranking-list li.mid .ranking-bar-fill {
+  background: linear-gradient(90deg, #b57a16 0%, #deac4e 100%);
+}
+
+.ranking-list li.low .ranking-bar-fill {
+  background: linear-gradient(90deg, #b63d4a 0%, #da7580 100%);
+}
+
 .flash-messages {
   display: grid;
   gap: 8px;
@@ -276,7 +390,7 @@ button.danger {
 
 table {
   width: 100%;
-  min-width: 980px;
+  min-width: 1320px;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -337,6 +451,69 @@ tbody tr:hover {
 .comment-cell {
   min-width: 200px;
   color: #3f4a63;
+}
+
+.moderation-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+}
+
+.moderation-chip.approved {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.moderation-chip.rejected {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #9f1239;
+}
+
+.moderation-chip.pending {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.score-stack {
+  display: grid;
+  gap: 2px;
+  min-width: 150px;
+}
+
+.score-stack strong {
+  color: #29324a;
+  font-size: 13px;
+}
+
+.score-stack small {
+  color: #6a748c;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.auto-link-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #f6f7fb;
+  border: 1px solid #d9deed;
+  color: #55607a;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+}
+
+.auto-link-chip.linked {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+  color: #166534;
 }
 
 .actions-cell {

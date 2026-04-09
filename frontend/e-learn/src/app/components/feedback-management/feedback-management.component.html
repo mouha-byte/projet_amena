@@ -11,8 +11,8 @@
         <strong>{{ feedbacks.length }}</strong>
       </article>
       <article class="metric">
-        <span>Mode</span>
-        <strong>{{ editingId === null ? 'Ajout' : 'Edition' }}</strong>
+        <span>Moyenne</span>
+        <strong>{{ ratingSummary.averageRating }}/5</strong>
       </article>
       <article class="metric">
         <span>Dictee</span>
@@ -40,7 +40,7 @@
         </label>
 
         <label class="full">
-          Titre du post
+          Titre du cours (rating)
           <div class="speech-input">
             <input type="text" [(ngModel)]="formModel.title" name="feedbackTitle" />
             <button type="button" class="secondary" (click)="startSpeechInput('title')" [disabled]="listening">
@@ -94,6 +94,41 @@
         <h4>Conseil</h4>
         <p>Utilisez les boutons WhatsApp et Telegram pour diffuser rapidement les publications utiles.</p>
       </div>
+
+      <div class="hint-block stats-panel">
+        <h4>Statistiques rating</h4>
+        <div class="stats-grid">
+          <article class="mini-stat">
+            <span>Moyenne</span>
+            <strong>{{ ratingSummary.averageRating }}/5</strong>
+          </article>
+          <article class="mini-stat">
+            <span>Feedbacks notes</span>
+            <strong>{{ ratingSummary.ratedFeedbackCount }} / {{ ratingSummary.feedbackCount }}</strong>
+          </article>
+          <article class="mini-stat">
+            <span>Cours classes</span>
+            <strong>{{ ratingSummary.rankedCourseCount }}</strong>
+          </article>
+        </div>
+      </div>
+
+      <div class="hint-block ranking-panel" *ngIf="courseRanking.length > 0">
+        <h4>Classement des cours</h4>
+        <ul class="ranking-list">
+          <li *ngFor="let course of courseRanking; index as i" [ngClass]="getRatingBand(course.averageRating)">
+            <div class="ranking-head">
+              <span class="rank-index">#{{ i + 1 }}</span>
+              <span class="rank-title">{{ course.courseTitle }}</span>
+              <span class="rank-score">{{ course.averageRating }}/5</span>
+            </div>
+            <div class="ranking-bar-track">
+              <div class="ranking-bar-fill" [style.width]="getRatingBarWidth(course.averageRating)"></div>
+            </div>
+            <small>{{ course.feedbackCount }} avis</small>
+          </li>
+        </ul>
+      </div>
     </aside>
   </div>
 
@@ -121,10 +156,13 @@
             <th>ID</th>
             <th>Nom</th>
             <th>Email</th>
-            <th>Titre</th>
+            <th>Cours</th>
             <th>Image</th>
             <th>Note</th>
             <th>Commentaire</th>
+            <th>Moderation</th>
+            <th>Score risque</th>
+            <th>Auto Reclamation</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -142,6 +180,29 @@
               <span class="rating-chip">{{ item.rating }}/5</span>
             </td>
             <td class="comment-cell">{{ item.comment }}</td>
+            <td>
+              <span
+                class="moderation-chip"
+                [ngClass]="{
+                  approved: item.moderationStatus === 'APPROVED',
+                  rejected: item.moderationStatus === 'REJECTED',
+                  pending: item.moderationStatus === 'PENDING' || !item.moderationStatus
+                }"
+              >
+                {{ getModerationStatusLabel(item) }}
+              </span>
+            </td>
+            <td>
+              <div class="score-stack">
+                <strong>{{ getModerationScoreLabel(item) }}</strong>
+                <small>{{ getBlockedWordsLabel(item) }}</small>
+              </div>
+            </td>
+            <td>
+              <span class="auto-link-chip" [class.linked]="item.autoReclamationCreated">
+                {{ getAutoReclamationLabel(item) }}
+              </span>
+            </td>
             <td class="actions-cell">
               <button type="button" class="secondary" (click)="startEdit(item)">Editer</button>
               <button type="button" class="danger" (click)="deleteFeedback(item.id)">Supprimer</button>

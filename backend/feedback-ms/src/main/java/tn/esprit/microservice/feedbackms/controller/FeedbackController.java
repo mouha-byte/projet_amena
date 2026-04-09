@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import tn.esprit.microservice.feedbackms.entity.Feedback;
 import tn.esprit.microservice.feedbackms.service.FeedbackService;
@@ -46,6 +47,33 @@ public class FeedbackController {
         return ResponseEntity.ok(feedbackService.update(id, feedback));
     }
 
+    @GetMapping("/approved")
+    public List<Feedback> getApproved() {
+        return feedbackService.findApproved();
+    }
+
+    @GetMapping("/blocked")
+    public List<Feedback> getBlocked() {
+        return feedbackService.findBlocked();
+    }
+
+    @GetMapping("/ratings/summary")
+    public ResponseEntity<FeedbackService.RatingSummary> getRatingSummary() {
+        return ResponseEntity.ok(feedbackService.getRatingSummary());
+    }
+
+    @GetMapping("/ratings/by-course")
+    public ResponseEntity<List<FeedbackService.CourseRatingStats>> getRatingsByCourse() {
+        return ResponseEntity.ok(feedbackService.getCourseRatingStats());
+    }
+
+    @GetMapping("/ratings/ranking")
+    public ResponseEntity<List<FeedbackService.CourseRatingStats>> getRatingsRanking(
+            @RequestParam(defaultValue = "5") int top
+    ) {
+        return ResponseEntity.ok(feedbackService.getCourseRanking(top));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         feedbackService.delete(id);
@@ -61,6 +89,12 @@ public class FeedbackController {
     public ResponseEntity<FeedbackService.FeedbackDictationResult> processDictation(
             @RequestBody DictationRequest request) {
         return ResponseEntity.ok(feedbackService.processDictation(request.text()));
+    }
+
+    @PostMapping("/moderation/analyze")
+    public ResponseEntity<FeedbackService.ModerationPreview> analyzeModeration(
+            @RequestBody ModerationAnalyzeRequest request) {
+        return ResponseEntity.ok(feedbackService.analyzeDraft(request.title(), request.comment()));
     }
 
     @GetMapping(value = "/{id}/qrcode", produces = MediaType.IMAGE_PNG_VALUE)
@@ -83,5 +117,8 @@ public class FeedbackController {
     }
 
     public record DictationRequest(String text) {
+    }
+
+    public record ModerationAnalyzeRequest(String title, String comment) {
     }
 }

@@ -1,6 +1,11 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { FeedbackService } from '../../services/feedback.service';
+import {
+  FeedbackCourseRatingStats,
+  FeedbackRatingSummary,
+  FeedbackService
+} from '../../services/feedback.service';
 import { Feedback } from '../../models/feedback.model';
+import { forkJoin } from 'rxjs';
 
 type SpeechTargetField = 'title' | 'comment';
 
@@ -19,6 +24,13 @@ export class FeedbackManagementComponent implements OnInit {
   listening = false;
   speechSupported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
   qrPayload = '';
+  ratingSummary: FeedbackRatingSummary = {
+    averageRating: 0,
+    feedbackCount: 0,
+    ratedFeedbackCount: 0,
+    rankedCourseCount: 0
+  };
+  courseRanking: FeedbackCourseRatingStats[] = [];
 
   private speechRecognition: SpeechRecognition | null = null;
 
@@ -47,6 +59,7 @@ export class FeedbackManagementComponent implements OnInit {
       next: (data) => {
         this.feedbacks = data;
         this.refreshQrPayload();
+        this.loadRatingInsights();
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -230,6 +243,50 @@ export class FeedbackManagementComponent implements OnInit {
     window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank', 'noopener');
   }
 
+  getRatingBarWidth(averageRating: number): string {
+    const percent = Math.max(8, Math.min(100, averageRating * 20));
+    return `${percent}%`;
+  }
+
+  getRatingBand(averageRating: number): 'elite' | 'good' | 'mid' | 'low' {
+    if (averageRating >= 4.5) {
+      return 'elite';
+    }
+    if (averageRating >= 3.5) {
+      return 'good';
+    }
+    if (averageRating >= 2.5) {
+      return 'mid';
+    }
+    return 'low';
+  }
+
+  getAutoReclamationLabel(item: Feedback): string {
+    if (item.autoReclamationCreated && item.linkedReclamationId) {
+      return `Creee #${item.linkedReclamationId}`;
+    }
+    return item.autoReclamationStatus || 'Aucune';
+  }
+
+  getModerationStatusLabel(item: Feedback): string {
+    return item.moderationStatus || 'PENDING';
+  }
+
+  getModerationScoreLabel(item: Feedback): string {
+    if (item.moderationScore === null || item.moderationScore === undefined) {
+      return '0/100';
+    }
+    return `${item.moderationScore}/100`;
+  }
+
+  getBlockedWordsLabel(item: Feedback): string {
+    const words = item.blockedWords?.trim();
+    if (!words) {
+      return 'Aucun mot bloque';
+    }
+    return words;
+  }
+
   private refreshQrPayload(): void {
     if (this.feedbacks.length === 0) {
       this.qrPayload = JSON.stringify({ message: 'Aucun post forum' });
@@ -244,6 +301,29 @@ export class FeedbackManagementComponent implements OnInit {
       comment: latest.comment,
       rating: latest.rating,
       createdAt: latest.createdAt
+    });
+  }
+
+  private loadRatingInsights(): void {
+    forkJoin({
+      summary: this.feedbackService.getRatingSummary(),
+      ranking: this.feedbackService.getRatingsRanking(5)
+    }).subscribe({
+      next: ({ summary, ranking }) => {
+        this.ratingSummary = summary;
+        this.courseRanking = ranking;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.ratingSummary = {
+          averageRating: 0,
+          feedbackCount: this.feedbacks.length,
+          ratedFeedbackCount: 0,
+          rankedCourseCount: 0
+        };
+        this.courseRanking = [];
+        this.cdr.detectChanges();
+      }
     });
   }
 }

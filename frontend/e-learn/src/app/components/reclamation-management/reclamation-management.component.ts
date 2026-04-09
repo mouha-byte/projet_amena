@@ -1,7 +1,12 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { ReclamationService } from '../../services/reclamation.service';
+import {
+  ReclamationCourseRatingStats,
+  ReclamationRatingSummary,
+  ReclamationService
+} from '../../services/reclamation.service';
 import { Reclamation, ReclamationStatus } from '../../models/reclamation.model';
 import jsPDF from 'jspdf';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-reclamation-management',
@@ -17,6 +22,13 @@ export class ReclamationManagementComponent implements OnInit {
   editingId: number | null = null;
   speaking = false;
   ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  ratingSummary: ReclamationRatingSummary = {
+    averageRating: 0,
+    reclamationCount: 0,
+    ratedReclamationCount: 0,
+    rankedCourseCount: 0
+  };
+  courseRanking: ReclamationCourseRatingStats[] = [];
 
   readonly statuses: ReclamationStatus[] = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'];
 
@@ -25,6 +37,7 @@ export class ReclamationManagementComponent implements OnInit {
     userEmail: '',
     subject: '',
     imageUrl: '',
+    rating: 3,
     description: '',
     status: 'OPEN'
   };
@@ -44,6 +57,7 @@ export class ReclamationManagementComponent implements OnInit {
     this.reclamationService.getAll().subscribe({
       next: (data) => {
         this.reclamations = data;
+        this.loadRatingInsights();
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -64,12 +78,18 @@ export class ReclamationManagementComponent implements OnInit {
       userEmail: this.formModel.userEmail.trim(),
       subject: this.formModel.subject.trim(),
       imageUrl: this.formModel.imageUrl?.trim(),
+      rating: this.formModel.rating,
       description: this.formModel.description.trim(),
       status: this.formModel.status
     };
 
     if (!payload.userName || !payload.userEmail || !payload.subject || !payload.description) {
       this.errorMessage = 'Veuillez remplir tous les champs de la reclamation.';
+      return;
+    }
+
+    if (payload.rating < 1 || payload.rating > 5) {
+      this.errorMessage = 'La note doit etre entre 1 et 5.';
       return;
     }
 
@@ -110,6 +130,7 @@ export class ReclamationManagementComponent implements OnInit {
       userEmail: item.userEmail,
       subject: item.subject,
       imageUrl: item.imageUrl,
+      rating: item.rating ?? 3,
       description: item.description,
       status: item.status
     };
@@ -141,6 +162,7 @@ export class ReclamationManagementComponent implements OnInit {
       userEmail: '',
       subject: '',
       imageUrl: '',
+      rating: 3,
       description: '',
       status: 'OPEN'
     };
@@ -204,6 +226,7 @@ export class ReclamationManagementComponent implements OnInit {
       `Nom: ${item.userName}`,
       `Email: ${item.userEmail}`,
       `Sujet: ${item.subject}`,
+      `Note: ${item.rating ?? '-'}/5`,
       `Statut: ${item.status}`,
       `Image URL: ${item.imageUrl ?? '-'}`,
       `Description: ${item.description}`
@@ -219,7 +242,69 @@ export class ReclamationManagementComponent implements OnInit {
     doc.save(`reclamation-${item.id ?? 'item'}.pdf`);
   }
 
+  getRatingBarWidth(averageRating: number): string {
+    const percent = Math.max(8, Math.min(100, averageRating * 20));
+    return `${percent}%`;
+  }
+
+  getRatingBand(averageRating: number): 'elite' | 'good' | 'mid' | 'low' {
+    if (averageRating >= 4.5) {
+      return 'elite';
+    }
+    if (averageRating >= 3.5) {
+      return 'good';
+    }
+    if (averageRating >= 2.5) {
+      return 'mid';
+    }
+    return 'low';
+  }
+
+  getClassificationLabel(item: Reclamation): string {
+    return item.classificationLevel || 'MOYEN';
+  }
+
+  getClassificationClass(item: Reclamation): 'faible' | 'moyen' | 'fort' {
+    if (item.classificationLevel === 'FAIBLE') {
+      return 'faible';
+    }
+    if (item.classificationLevel === 'FORT') {
+      return 'fort';
+    }
+    return 'moyen';
+  }
+
+  getClassificationScoreLabel(item: Reclamation): string {
+    if (item.classificationScore === null || item.classificationScore === undefined) {
+      return '0/100';
+    }
+    return `${item.classificationScore}/100`;
+  }
+
   private buildShareText(item: Reclamation): string {
-    return `Reclamation: ${item.subject}\nAuteur: ${item.userName}\nStatut: ${item.status}\nDescription: ${item.description}`;
+    return `Reclamation: ${item.subject}\nAuteur: ${item.userName}\nNote: ${item.rating}/5\nStatut: ${item.status}\nDescription: ${item.description}`;
+  }
+
+  private loadRatingInsights(): void {
+    forkJoin({
+      summary: this.reclamationService.getRatingSummary(),
+      ranking: this.reclamationService.getRatingsRanking(5)
+    }).subscribe({
+      next: ({ summary, ranking }) => {
+        this.ratingSummary = summary;
+        this.courseRanking = ranking;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.ratingSummary = {
+          averageRating: 0,
+          reclamationCount: this.reclamations.length,
+          ratedReclamationCount: 0,
+          rankedCourseCount: 0
+        };
+        this.courseRanking = [];
+        this.cdr.detectChanges();
+      }
+    });
   }
 }
